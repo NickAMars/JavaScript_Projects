@@ -18,7 +18,7 @@ var budgetController = (function(){ // model
 			});
 			data.totals[type] = sum;
 		}
-// Private Object to store data
+// Private Object to Store data
 		var data = {
 				allItems:{
 					exp: [],
@@ -49,6 +49,17 @@ var budgetController = (function(){ // model
 							}
 							data.allItems[type].push(newItem);
 							return newItem;
+					},
+					deleteItem: function(type, id){
+						var ids, index;
+					 		ids =	data.allItems[type].map(function(current){
+							return current.id;// return array of all index
+						});
+						index = ids.indexOf(id); // index of the id
+						if(index !== -1){
+							data.allItems[type].splice(index, 1); // remove one element at the index
+						}
+
 					},
 					calculateBudget: function(){
 						// calculate total income and expenses__list
@@ -99,7 +110,8 @@ var UIController = (function(){ // view
 			budgetLabel: '.budget__value',
 			incomeLabel: '.budget__income--value',
 			expensesLabel: '.budget__expenses--value',
-			percentageLabel: '.budget__expenses--percentage'
+			percentageLabel: '.budget__expenses--percentage',
+			container: '.container'
 		};
 
 
@@ -116,40 +128,50 @@ var UIController = (function(){ // view
 						var html, newHtml,element;
 						// create html string with placeholder
 						if(type === 'inc'){
-
 								element = DOMstrings.incomeContainer;
-								html = '<div class="item clearfix" id="income-%id%"><div class="item__description">%description%</div>'+
-								'<div class="right clearfix"><div class="item__value">%value%</div>'+
-								'<div class="item__delete"><button class="item__delete--btn">'+
-								'<i class="ion-ios-close-outline"></i></button></div></div></div>';
-
+								html = '<div class="item clearfix" id="inc-%id%">'+
+								'<div class="item__description">%description%</div>'+
+								'<div class="right clearfix">'+
+								'<div class="item__value">%value%</div>'+
+								'<div class="item__delete">'+
+								'<button class="item__delete--btn">'+
+								'<i class="ion-ios-close-outline">'+
+								'</i></button></div></div></div>';
 						} else {
 								element = DOMstrings.expensesContainer;
 									// DOM manipulation
-								html = '<div class="item clearfix" id="expense-%id%"><div class="item__description">%description%</div>'+
-								'<div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div>'+
-								'<div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+								html = '<div class="item clearfix" id="exp-%id%">'+
+								'<div class="item__description">%description%</div>'+
+								'<div class="right clearfix">'+
+								'<div class="item__value">%value%</div>'+
+								'<div class="item__percentage">21%</div>'+
+								'<div class="item__delete">'+
+								'<button class="item__delete--btn">'+
+								'<i class="ion-ios-close-outline">'+
+								'</i></button></div></div></div>';
 						}
-
-						// replace the placeholder text with some actual
+						//placeholder
 						newHtml = html.replace('%id%',obj.id);
 						newHtml = newHtml.replace('%description%', obj.description);
 						newHtml = newHtml.replace('%value%', obj.value);
-						//Insert the html into the DOM
+						//Insert html
 						document.querySelector(element).insertAdjacentHTML('beforeend', newHtml);
 					},
+					deleteListItem: function(selectorID){
+						var el;
+						el =document.getElementById(selectorID);
+						el.parentNode.removeChild(el);//remove from UI
+					}
+					,
 
 					clearFields: function (){ // clear the  fields
 						var fields, fieldsArr;
-						fields = document.querySelectorAll(DOMstrings.inputDescription + ','+ DOMstrings.inputValue); // returns a list
-						// list is a bit simular to an array but not an array
-						// In the array prototype we can find the slice method
-						var fieldsArr = Array.prototype.slice.call(fields); // this produces a list
-						// current element , current index, the origin array
+						fields = document.querySelectorAll(DOMstrings.inputDescription + ','+ DOMstrings.inputValue); // returns LIST
+						var fieldsArr = Array.prototype.slice.call(fields);  // Prototype function of Array
 						fieldsArr.forEach(function(current, index, array){// clear all the feilds
 								current.value = "";
 						 });
-						 fieldsArr[0].focus(); // put the curse back to description
+						 fieldsArr[0].focus(); // cursor to description
 					},
 					displayBudget: function(obj){
 						document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
@@ -176,11 +198,11 @@ var UIController = (function(){ // view
 
 
 
-//GLOBAL APP CONTROLLER
-var controller = (function(budgetCtrl,UICtrl){ // controll
+// CONTROLLER
+var controller = (function(budgetCtrl,UICtrl){ // control
 	//PRIVATE
-				var setupEventListeners = function(){ // event listener
-									var DOM = UICtrl.getDOMstrings(); // gets the string from the UI
+				var setupEventListeners = function(){
+									var DOM = UICtrl.getDOMstrings();
 									document.querySelector(DOM.inputBtn).addEventListener('click', ctrlAddItem);
 
 									document.addEventListener('keypress', function(event){
@@ -188,38 +210,45 @@ var controller = (function(budgetCtrl,UICtrl){ // controll
 													ctrlAddItem();
 											}
 									});
+									document.querySelector(DOM.container).addEventListener('click',ctrlDeleteItem);
 						}
 			var updateBudget = function(){
-				// 5. Calculate the budget
-				budgetCtrl.calculateBudget(); // calculate the budget, percentage, income and expense
-				// 6. Return the budge
-				var budget = budgetCtrl.getBudget(); //Objects to update UI
-				// 7. Display the bidget on the UI
+				budgetCtrl.calculateBudget();
+				var budget = budgetCtrl.getBudget();
 				UICtrl.displayBudget(budget);
-
 			}
 
 		var ctrlAddItem = function(){
 												var input, newItem;
-												// 1. get input data
 											 	input = UICtrl.getInput();
 												if(input.description !== "" && !isNaN(input.value) && input.value > 0){
-													// 2. add the item to the budget CONTROLLER
 													newItem = budgetCtrl.addItem(input.type, input.description, input.value);
-													// 3. add the item to the ui
-													UICtrl.addListItem(newItem, input.type) // sumbit html
-													// 4. Clean inputfeild
-													UICtrl.clearFields();
-													// 5. Calculate and update budget
-													updateBudget();
+													UICtrl.addListItem(newItem, input.type) // sumbit html bottom
+													UICtrl.clearFields(); // clear fiels
+													updateBudget();// update top html
 												}
 										}
+		var ctrlDeleteItem = function(event){
+																var itemID, splitID, type , ID;
+																itemID = event.target.parentNode.parentNode.parentNode.parentNode.id;
+																if(itemID){
+																		splitID = itemID.split('-'); //returns Array
+																		type = splitID[0];
+																		ID = parseInt(splitID[1]);
+																		// delete item from data structure
+																		budgetCtrl.deleteItem(type, ID);
+																		UICtrl.deleteListItem(itemID);
+																		updateBudget();
+																}
+													}
+
+
 											//PUBLIC
 											return  {
-												init: function (){ // initialize function
+												init: function (){
 													console.log('Application has ');
 													setupEventListeners();
-													UICtrl.displayBudget(// pass in empty object
+													UICtrl.displayBudget(
 														{
 																budget:0,
 																totalInc: 0,
